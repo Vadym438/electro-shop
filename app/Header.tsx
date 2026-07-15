@@ -3,10 +3,12 @@
 
 import { useState } from "react";
 import { useCart } from "./CartContext";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { cart, clearCart, totalPrice } = useCart(); // 👈 беремо дані з глобального контексту
+  const router = useRouter();
 
   return (
     <header className="max-w-6xl mx-auto bg-white p-4 rounded-xl shadow-md mb-8 flex justify-between items-center relative">

@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { useState,  useEffect } from "react";
 import Header from "./Header";
 import { useCart } from "./CartContext";
+import Link from "next/link";
 
 export default function Home() {
   // Тут (до return) ми зазвичай пишемо логіку на JS/TS (функції, фільтри тощо)
   const router = useRouter(); // 👈 створюємо інструмент для навігації
   const [cart, setCart] = useState<any[]>([]);
   
-
   const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
   const { addToCart } = useCart();
   
@@ -21,12 +21,37 @@ export default function Home() {
   setCart([]);
   localStorage.removeItem("electro_cart"); // повністю видаляємо ключ зі сховища
   };
+  
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api ")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProducts(data);
+        }
+      })
+      .catch((err) => console.error("Помилка:", err));
+  }, []);
 
   return (
     // Все, що всередині return — це вигляд нашого сайту (HTML + стилі Tailwind)
     <main className="min-h-screen bg-gray-100 p-8">
       <Header />
 
+      <div className="max-w-6xl mx-auto mt-8">
+      
+      {/* Кнопка для переходу на сторінку створення */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Список товарів у базі:</h2>
+        <Link 
+          href="/product/NewProduct" 
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow"
+        >
+          + Додати новий товар
+        </Link>
+      </div>
             
 {isOpen && (
   <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
@@ -69,7 +94,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
         
         {/* Мапимо (перебираємо) наш масив товарів за допомогою стандартного .map() */}
-        {MOCK_PRODUCTS.map((product) => (
+        {products.map((product) => (
           // Твоє завдання: додати <Link href={...}> навколо картки або всередині неї
           <div key={product.id} 
             onClick={() => router.push(`/product/${product.id}`)} // 👈 Клік по картці переводить на сторінку товару
@@ -78,7 +103,7 @@ export default function Home() {
             {<div key={product.id}>
             <div>
               <img 
-                src={product.image} 
+                src={product.imageUrl || "/placeholder.png"} 
                 alt={product.name} 
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
@@ -107,6 +132,7 @@ export default function Home() {
         </div>
         ))}
       </div>
+    </div>
     </main>
   );
 }

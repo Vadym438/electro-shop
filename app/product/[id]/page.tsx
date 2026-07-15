@@ -3,6 +3,8 @@ import { MOCK_PRODUCTS } from "../../../products"; // перевірь шлях,
 import BuyButton from "../../BuyButton";
 import Header from "@/app/Header"; // або "../../Header" залежно від структури папок
 import { useCart } from "@/app/CartContext";
+import { db } from "@/app/db";
+import { redirect } from "next/navigation";
 
 
 interface ProductPageProps {
@@ -12,17 +14,34 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
+
   // 1. Твоє завдання: Використай метод масиву (наприклад, .find()), 
   // щоб знайти товар, у якого product.id збігається з params.id.
-    const resParams = await params;
+  const resParams = await params;
 
-    const product = MOCK_PRODUCTS.find((p) => p.id === resParams.id);
+  const products = await db.product.findMany(); // отримуємо всі продукти з бази даних
 
-
+  const product = products.find((product) => product.id === Number(resParams.id));
+      
   // 2. Обов'язкова перевірка: якщо товар не знайдено (product === undefined)
   if (!product) {
     return <main className="p-8">Товар не знайдено!</main>;
   }
+
+  const productId = Number(resParams.id);
+
+  async function deleteProductAction() {
+    "use server" // Ця директива каже Next.js, що функція виконається тільки на сервері
+
+    await db.product.delete({
+      where: { id: productId },
+    });
+
+    // Після видалення перенаправляємо користувача на головну сторінку
+    redirect("/");
+  }
+
+
 
   // 3. Твоє завдання: Напиши вигляд (JSX) для цієї сторінки.
   // Виведи тут назву, опис, велику картинку і ціну.
@@ -30,10 +49,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <Header />
+
+
+
       <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">{product.name}</h1>
         <img 
-          src={product.image} 
+          src={product.imageUrl || "/placeholder.png"} 
           alt={product.name} 
           className="w-full h-128 object-cover rounded-lg mb-4"
         />
@@ -43,6 +65,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <BuyButton productName={product.name} productPrice={product.price}   />
         </div>
       </div>
+      {/* Форма, яка викликає серверну дію */}
+      <form action={deleteProductAction} className="mt-8">
+        <button
+          type="submit"
+          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+        >
+          Видалити товар (Server Action)
+        </button>
+      </form>
     </main>
   );
 }
