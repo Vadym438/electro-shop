@@ -1,79 +1,17 @@
-// app/product/[id]/page.tsx
-import { MOCK_PRODUCTS } from "../../../products"; // перевірь шлях, якщо продукти в корені
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import BuyButton from "../../BuyButton";
-import Header from "@/app/Header"; // або "../../Header" залежно від структури папок
-import { useCart } from "@/app/CartContext";
+import Header from "@/app/Header";
 import { db } from "@/app/db";
-import { redirect } from "next/navigation";
 
-
-interface ProductPageProps {
-  params: {
-    id: string;
-  };
-}
+type ProductPageProps = { params: Promise<{ id: string }> };
 
 export default async function ProductPage({ params }: ProductPageProps) {
-
-  // 1. Твоє завдання: Використай метод масиву (наприклад, .find()), 
-  // щоб знайти товар, у якого product.id збігається з params.id.
-  const resParams = await params;
-
-  const products = await db.product.findMany(); // отримуємо всі продукти з бази даних
-
-  const product = products.find((product) => product.id === Number(resParams.id));
-      
-  // 2. Обов'язкова перевірка: якщо товар не знайдено (product === undefined)
-  if (!product) {
-    return <main className="p-8">Товар не знайдено!</main>;
-  }
-
-  const productId = Number(resParams.id);
-
-  async function deleteProductAction() {
-    "use server" // Ця директива каже Next.js, що функція виконається тільки на сервері
-
-    await db.product.delete({
-      where: { id: productId },
-    });
-
-    // Після видалення перенаправляємо користувача на головну сторінку
-    redirect("/");
-  }
-
-
-
-  // 3. Твоє завдання: Напиши вигляд (JSX) для цієї сторінки.
-  // Виведи тут назву, опис, велику картинку і ціну.
-  // Використовуй класи Tailwind (наприклад, text-2xl, font-bold і тд) для краси.
-  return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <Header />
-
-
-
-      <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">{product.name}</h1>
-        <img 
-          src={product.imageUrl || "/placeholder.png"} 
-          alt={product.name} 
-          className="w-full h-128 object-cover rounded-lg mb-4"
-        />
-        <p className="text-gray-600 text-lg mb-4">{product.description}</p>
-        <div className="text-2xl font-bold text-green-600">
-          {product.price} ₴
-        <BuyButton productName={product.name} productPrice={product.price}   />
-        </div>
-      </div>
-      {/* Форма, яка викликає серверну дію */}
-      <form action={deleteProductAction} className="mt-8">
-        <button
-          type="submit"
-          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
-        >
-          Видалити товар (Server Action)
-        </button>
-      </form>
-    </main>
-  );
+  const { id } = await params;
+  const productId = Number(id);
+  if (!Number.isInteger(productId)) notFound();
+  const product = await db.product.findUnique({ where: { id: productId } });
+  if (!product) notFound();
+  async function deleteProductAction() { "use server"; await db.product.delete({ where: { id: productId } }); redirect("/"); }
+  return <main className="min-h-screen bg-slate-100 px-4 py-5 sm:px-6 lg:px-8"><Header /><section className="mx-auto mt-10 max-w-6xl"><Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-700">← Усі товари</Link><div className="mt-5 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 lg:grid lg:grid-cols-2"><div className="min-h-80 bg-slate-100 lg:min-h-[34rem]">{product.imageUrl ? <div role="img" aria-label={product.name} style={{ backgroundImage: `url(${product.imageUrl})` }} className="h-full min-h-80 bg-cover bg-center lg:min-h-[34rem]" /> : <div className="grid h-full min-h-80 place-items-center text-7xl lg:min-h-[34rem]">⚡</div>}</div><div className="flex flex-col p-7 sm:p-10"><span className="w-fit rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">{product.category}</span><h1 className="mt-5 text-4xl font-black tracking-tight text-slate-950">{product.name}</h1><p className="mt-5 text-lg leading-8 text-slate-600">{product.description || "Якісний пристрій для щоденних задач і комфортного користування."}</p><div className="mt-8 rounded-2xl bg-slate-50 p-5"><p className="text-sm font-bold text-slate-500">Ціна</p><p className="mt-1 text-4xl font-black text-blue-700">{product.price.toLocaleString("uk-UA")} ₴</p><p className="mt-3 text-sm font-bold text-emerald-600">{product.stock > 0 ? `✓ В наявності: ${product.stock} шт.` : "Наразі немає в наявності"}</p></div><div className="mt-6">{product.stock > 0 ? <BuyButton productName={product.name} productPrice={product.price} /> : <button disabled className="w-full rounded-xl bg-slate-200 py-3.5 font-bold text-slate-500">Немає в наявності</button>}</div><div className="mt-auto border-t border-slate-100 pt-6"><form action={deleteProductAction}><button type="submit" className="text-sm font-bold text-red-500 transition hover:text-red-700">Видалити товар</button></form></div></div></div></section></main>;
 }

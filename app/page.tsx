@@ -1,138 +1,94 @@
 "use client";
 
-// src/app/page.tsx
-import { MOCK_PRODUCTS } from "../products"; // Імпортуємо нашу "шпаргалку" з товарами
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState,  useEffect } from "react";
 import Header from "./Header";
 import { useCart } from "./CartContext";
-import Link from "next/link";
+
+type Product = {
+  id: string | number;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  imageUrl: string | null;
+  stock: number;
+};
+
+const categoryIcons = ["⌁", "◈", "◌", "✦"];
 
 export default function Home() {
-  // Тут (до return) ми зазвичай пишемо логіку на JS/TS (функції, фільтри тощо)
-  const router = useRouter(); // 👈 створюємо інструмент для навігації
-  const [cart, setCart] = useState<any[]>([]);
-  
-  const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
+  const router = useRouter();
   const { addToCart } = useCart();
-  
-  const [isOpen, setIsOpen] = useState(false);
-  const clearCart = () => {
-  setCart([]);
-  localStorage.removeItem("electro_cart"); // повністю видаляємо ключ зі сховища
-  };
-  
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api ")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProducts(data);
-        }
+    fetch("/api/products")
+      .then((response) => response.json())
+      .then((data: unknown) => {
+        if (Array.isArray(data)) setProducts(data as Product[]);
       })
-      .catch((err) => console.error("Помилка:", err));
+      .catch(() => setProducts([]))
+      .finally(() => setIsLoading(false));
   }, []);
 
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category))].slice(0, 4),
+    [products],
+  );
+
+  const scrollToProducts = () => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+
   return (
-    // Все, що всередині return — це вигляд нашого сайту (HTML + стилі Tailwind)
-    <main className="min-h-screen bg-gray-100 p-8">
-      <Header />
-
-      <div className="max-w-6xl mx-auto mt-8">
-      
-      {/* Кнопка для переходу на сторінку створення */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Список товарів у базі:</h2>
-        <Link 
-          href="/product/NewProduct" 
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow"
-        >
-          + Додати новий товар
-        </Link>
-      </div>
-            
-{isOpen && (
-  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
-    <h3 className="font-bold text-black mb-2">Твій кошик</h3>
-    
-    {cart.length === 0 ? (
-      <p className="text-gray-500 text-sm">Кошик порожній 🙈</p>
-    ) : (
-      <div>
-        {/* Твоє завдання: пройдись мапити (.map) по масиву cart і виведи назву й ціну кожного доданого товару */}
-        <div className="max-h-60 overflow-y-auto mb-4">
-          {cart.map((item, index) => (
-            <div key={index} className="flex justify-between text-black py-1 border-b">
-              <span>{item.name}</span>
-              <span className="font-semibold">{item.price} ₴</span>
-            </div>
-          ))}
-        </div>
-
-        <div >
-          <span className="font-bold text-black">Разом:</span>
-          <span className="font-bold text-green-600">{totalPrice} ₴</span>
-        </div>
-
-        {/* Кнопка очищення */}
-        <button 
-          onClick={clearCart}
-          className="w-full bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition"
-        >
-          Очистити кошик
-        </button>
-      </div>
-    )}
-  </div>
-)}
-   {/* Кінець контейнера кошика */}
-
-
-      {/* Сітка для карток товарів (3 колонки на великому екрані) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        
-        {/* Мапимо (перебираємо) наш масив товарів за допомогою стандартного .map() */}
-        {products.map((product) => (
-          // Твоє завдання: додати <Link href={...}> навколо картки або всередині неї
-          <div key={product.id} 
-            onClick={() => router.push(`/product/${product.id}`)} // 👈 Клік по картці переводить на сторінку товару
-            className="bg-white rounded-xl shadow-md p-5 flex flex-col justify-between cursor-pointer hover:shadow-lg transition">
-           
-            {<div key={product.id}>
+    <main className="min-h-screen overflow-hidden bg-slate-950 text-slate-900">
+      <div className="relative isolate bg-[radial-gradient(circle_at_12%_0%,#1d4ed8_0,transparent_28%),radial-gradient(circle_at_88%_12%,#7c3aed_0,transparent_23%),linear-gradient(135deg,#020617,#111c3f_56%,#172554)] pb-18">
+        <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:42px_42px]" />
+        <div className="relative px-4 pt-5 sm:px-6 lg:px-8">
+          <Header />
+          <section className="mx-auto grid max-w-6xl items-center gap-12 py-12 md:grid-cols-[1.1fr_.9fr] md:py-20">
             <div>
-              <img 
-                src={product.imageUrl || "/placeholder.png"} 
-                alt={product.name} 
-                className="w-full h-48 object-cover rounded-lg mb-4"
-              />
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                {product.category}
-              </span>
-              <h2 className="text-xl font-bold text-gray-800 mt-2">{product.name}</h2>
-              <p className="text-gray-600 text-sm mt-1">{product.description}</p>
-            </div>
-
-            <div className="mt-4">
-              <div className="text-2xl font-bold text-green-600 mb-3">
-                {product.price} ₴
+              <p className="mb-5 inline-flex rounded-full border border-blue-300/25 bg-white/10 px-4 py-2 text-sm font-semibold text-blue-100 backdrop-blur">Новинки, які хочеться забрати додому</p>
+              <h1 className="max-w-2xl text-5xl font-black tracking-tight text-white sm:text-6xl">Техніка, яка <span className="text-cyan-300">надихає</span> щодня.</h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">Обирайте електроніку для роботи, дому та відпочинку — із швидкою доставкою та підтримкою на кожному кроці.</p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <button onClick={scrollToProducts} className="rounded-xl bg-cyan-300 px-6 py-3 font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:-translate-y-0.5 hover:bg-cyan-200">Переглянути каталог</button>
+                <Link href="/registr" className="rounded-xl border border-white/25 bg-white/10 px-6 py-3 font-bold text-white backdrop-blur transition hover:bg-white/20">Створити акаунт</Link>
               </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  addToCart(product)
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
-              >
-                Купити
-              </button>
+              <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-slate-300">
+                <span>✓ Гарантія на товари</span><span>✓ Швидка доставка</span><span>✓ Безпечна оплата</span>
+              </div>
             </div>
-            </div>}
+            <div className="relative mx-auto w-full max-w-md">
+              <div className="absolute -inset-5 rounded-[2.5rem] bg-cyan-400/20 blur-3xl" />
+              <div className="relative rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur">
+                <div className="flex items-center justify-between"><span className="rounded-full bg-cyan-300 px-3 py-1 text-xs font-black tracking-wider text-slate-950">ELECTRO DROP</span><span className="text-sm text-slate-300">Твій вибір</span></div>
+                <div className="mt-5 grid aspect-[4/3] place-items-center rounded-[1.5rem] bg-[linear-gradient(145deg,#38bdf8,#4f46e5_55%,#1e1b4b)] shadow-inner">
+                  <div className="grid h-44 w-64 place-items-center rounded-2xl border-[10px] border-slate-900 bg-slate-950 shadow-2xl"><div className="h-24 w-44 rounded-lg bg-[radial-gradient(circle_at_30%_20%,#67e8f9,transparent_25%),linear-gradient(135deg,#1d4ed8,#7c3aed)]" /></div>
+                </div>
+                <div className="mt-5 flex items-end justify-between"><div><p className="text-sm text-slate-300">Смарт-пристрої</p><p className="text-xl font-bold text-white">Новий рівень комфорту</p></div><span className="text-3xl">⚡</span></div>
+              </div>
+            </div>
+          </section>
         </div>
-        ))}
       </div>
-    </div>
+
+      <section className="bg-slate-100 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[.2em] text-blue-600">Зручно обирати</p><h2 className="mt-2 text-3xl font-black text-slate-900">Популярні категорії</h2></div><span className="hidden text-sm text-slate-500 sm:block">Все потрібне в одному місці</span></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {(categories.length ? categories : ["Смартфони", "Ноутбуки", "Дім", "Аксесуари"]).map((category, index) => <button key={category} onClick={scrollToProducts} className="group flex items-center gap-4 rounded-2xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"><span className="grid h-12 w-12 place-items-center rounded-xl bg-blue-50 text-2xl text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">{categoryIcons[index]}</span><span className="font-bold text-slate-800">{category}</span></button>)}
+          </div>
+        </div>
+      </section>
+
+      <section id="products" className="bg-white px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[.2em] text-violet-600">Обране для вас</p><h2 className="mt-2 text-3xl font-black text-slate-900">Знайдіть свою наступну покупку</h2></div><Link href="/product/NewProduct" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">+ Додати товар</Link></div>
+          {isLoading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div key={item} className="h-96 animate-pulse rounded-2xl bg-slate-100" />)}</div> : products.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center"><p className="text-xl font-bold text-slate-800">Товари ще додаються</p><p className="mt-2 text-slate-500">Поверніться трохи пізніше або додайте перший товар.</p></div> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{products.map((product) => <article key={product.id} onClick={() => router.push(`/product/${product.id}`)} className="group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"><div className="relative h-52 overflow-hidden bg-slate-100">{product.imageUrl ? <div role="img" aria-label={product.name} style={{ backgroundImage: `url(${product.imageUrl})` }} className="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-105" /> : <div className="grid h-full place-items-center text-5xl">⚡</div>}<span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-700 backdrop-blur">{product.category}</span></div><div className="p-5"><p className="line-clamp-1 text-lg font-black text-slate-900">{product.name}</p><p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{product.description || "Якісна техніка для сучасного життя."}</p><div className="mt-5 flex items-center justify-between gap-3"><div><p className="text-2xl font-black text-blue-700">{product.price.toLocaleString("uk-UA")} ₴</p><p className="mt-1 text-xs font-medium text-emerald-600">{product.stock > 0 ? `В наявності: ${product.stock}` : "Немає в наявності"}</p></div><button disabled={product.stock <= 0} onClick={(event) => { event.stopPropagation(); addToCart(product); }} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">У кошик</button></div></div></article>)}</div>}
+        </div>
+      </section>
     </main>
   );
 }
