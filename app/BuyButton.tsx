@@ -8,10 +8,13 @@ interface BuyButtonProps {
   productPrice: number; // Додано для передачі ціни товару
 }
 
-export default function BuyButton({ productName, productPrice }: BuyButtonProps) {
-    const { addToCart } = useCart();
+export default function BuyButton({
+  productName,
+  productPrice,
+}: BuyButtonProps) {
+  const { addToCart } = useCart();
   return (
-    <button 
+    <button
       onClick={() => {
         addToCart({ name: productName, price: productPrice });
       }}
