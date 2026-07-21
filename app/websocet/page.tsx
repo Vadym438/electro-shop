@@ -6,7 +6,7 @@ import { useState } from "react"
 export default function ChatPage() {
     const [ input, setInput] = useState('')
 
-    const wsUrl ='ws://localhost:8080'
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080';
     const {messages, isConnected, sendMessage} = useWebSocket(wsUrl)
 
     const handleSend = () => {
