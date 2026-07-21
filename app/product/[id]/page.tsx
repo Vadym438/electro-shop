@@ -3,10 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import BuyButton from "../../BuyButton";
 import Header from "@/app/Header";
 import { db } from "@/app/db";
+import { auth } from "@/auth";
+import { json } from "stream/consumers";
 
 type ProductPageProps = { params: Promise<{ id: string }> };
 
-export default async function ProductPage({ params }: ProductPageProps) {
+  export default async function ProductPage({ params }: ProductPageProps) {
+  const session = await auth();
   const { id } = await params;
   const productId = Number(id);
   if (!Number.isInteger(productId)) notFound();
@@ -14,9 +17,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) notFound();
   async function deleteProductAction() {
     "use server";
+    if (session?.user?.role !== "admin")
+      redirect("/login");
     await db.product.delete({ where: { id: productId } });
     redirect("/");
   }
+  console.log("SESSION", session);
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5 sm:px-6 lg:px-8">
       <Header />

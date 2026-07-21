@@ -2,10 +2,17 @@ import { db } from "@/app/db";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
+declare module "next-auth" {
+  interface User {
+    role?: string;
+  }
+}
+
 async function requireAuth() {
   const session = await auth();
-  if (!session)
-    return NextResponse.json({ error: "Ви не авторизовані." }, { status: 401 });
+  if (session?.user?.role !== "admin")
+    return null;
+  return session;
 }
 
 export async function GET() {
@@ -20,8 +27,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await requireAuth();
-  if (unauthorized) return unauthorized;
+  const session = await requireAuth();
+  if (!session) return NextResponse.json({ error: "Ви не адміністратор." }, { status: 401 });
   try {
     const { name, price, category, stock, imageUrl, description } =
       await request.json();
@@ -38,8 +45,6 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const unauthorized = await requireAuth();
-  if (unauthorized) return unauthorized;
   try {
     const id = new URL(request.url).searchParams.get("id");
     if (!id)

@@ -12,6 +12,7 @@ const defaultNavItems: HeaderNavItem[] = [
   { label: "Каталог", href: "/#products" },
   { label: "Новинки", href: "/#products", badge: "NEW" },
   { label: "Додати товар", href: "/product/NewProduct" },
+  { label: "Зв'язок з підтримкою", href: "/websocet"}
 ];
 
 export default function Header({
